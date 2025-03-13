@@ -1,7 +1,14 @@
-import sys
-__import__('pysqlite3')
-sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
+# This must be the first code that runs
+import os
+# Configure environment before any imports
+os.environ["LANGCHAIN_TRACING_V2"] = "false"
+os.environ["CHROMA_DB_IMPL"] = "duckdb+parquet"
+os.environ["CHROMADB_CLIENT_SETTINGS_PERSIST_DIRECTORY"] = ""
 
+# Continue with standard imports
+# import sys
+# __import__('pysqlite3')
+# sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
 
 import streamlit as st
 import uuid
