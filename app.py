@@ -33,16 +33,26 @@ if not os.getenv("GROQ_API_KEY"):
         pass  # Will be handled later with user-friendly error
 
 
+# Configure logging
+# Only use file logging for local development, not on Streamlit Cloud
+handlers = [logging.StreamHandler()]
+if not os.getenv("STREAMLIT_RUNTIME_ENV"):  # Local development
+    handlers.append(logging.FileHandler("app_debug.log"))
 
-# Configure logging with more detail
 logging.basicConfig(
-    level=logging.DEBUG,  # Change to DEBUG for more detailed logs
+    level=logging.INFO,  # Changed from DEBUG to INFO to reduce log noise
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.FileHandler("app_debug.log"),
-        logging.StreamHandler()
-    ]
+    handlers=handlers,
+    force=True  # Override any existing configuration
 )
+
+# Silence noisy loggers
+logging.getLogger("watchdog").setLevel(logging.WARNING)
+logging.getLogger("watchdog.observers.inotify_buffer").setLevel(logging.WARNING)
+logging.getLogger("urllib3").setLevel(logging.WARNING)
+logging.getLogger("httpx").setLevel(logging.WARNING)
+logging.getLogger("httpcore").setLevel(logging.WARNING)
+
 logger = logging.getLogger(__name__)
 
 # Add this debug helper

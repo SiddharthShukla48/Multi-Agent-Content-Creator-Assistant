@@ -1,0 +1,11 @@
+[server]
+fileWatcherType = "none"
+runOnSave = false
+
+[logger]
+level = "info"
+messageFormat = "%(asctime)s %(message)s"
+
+[client]
+showErrorDetails = true
+toolbarMode = "minimal"
