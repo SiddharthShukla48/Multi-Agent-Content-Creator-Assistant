@@ -1,23 +1,21 @@
-from crewai import Agent
-from langchain_groq import ChatGroq
+from crewai import Agent, LLM
 from dotenv import load_dotenv
 import os
 
 load_dotenv()
 
-# Initialize the Groq language model
-def get_llm(model="llama-3.3-70b-versatile"):
-    # Update this to explicitly specify the provider is Groq
-    return ChatGroq(
-        api_key=os.getenv("GROQ_API_KEY"),
-        model_name=f"groq/{model}"  # Explicitly prefix with "groq/"
+# Initialize the Groq language model using CrewAI's native LLM provider
+def get_llm(model="groq/meta-llama/llama-4-scout-17b-16e-instruct"):
+    return LLM(
+        model=model,
+        temperature=0.7
     )
 
 # For vision tasks
 def get_vision_llm():
-    return ChatGroq(
-        api_key=os.getenv("GROQ_API_KEY"),
-        model="groq/llama-3.2-90b-vision-preview"  # Adjust to an appropriate Groq vision model
+    return LLM(
+        model="groq/llama-3.2-90b-vision-preview",
+        temperature=0.7
     )
 
 # Define agents

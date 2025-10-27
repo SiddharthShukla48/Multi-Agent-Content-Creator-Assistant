@@ -1,5 +1,10 @@
 # This must be the first code that runs
 import os
+from dotenv import load_dotenv
+
+# Load environment variables from .env file (for local development)
+load_dotenv()
+
 # Configure environment before any imports
 os.environ["LANGCHAIN_TRACING_V2"] = "false"
 os.environ["CHROMA_DB_IMPL"] = "duckdb+parquet"
@@ -18,6 +23,15 @@ import json
 import os
 from crews.crew_definitions import get_content_creation_crew
 from utils.helpers import save_session_data, load_session_data, parse_topic_results
+
+# Handle API key from either .env (local) or Streamlit secrets (cloud)
+if not os.getenv("GROQ_API_KEY"):
+    try:
+        # Try to get from Streamlit secrets (for cloud deployment)
+        os.environ["GROQ_API_KEY"] = st.secrets["GROQ_API_KEY"]
+    except (KeyError, FileNotFoundError):
+        pass  # Will be handled later with user-friendly error
+
 
 
 # Configure logging with more detail
