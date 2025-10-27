@@ -91,6 +91,87 @@ def parse_topic_results(output):
     except Exception as e:
         # If parsing fails completely, return None to show raw output
         return None
+
+# Generate PDF from script content
+def create_script_pdf(script_content, topic_title="Content Script"):
+    """Generate a PDF file from the script content"""
+    from fpdf import FPDF
+    from datetime import datetime
+    
+    # Create PDF object with proper configuration
+    pdf = FPDF()
+    pdf.add_page()
+    pdf.set_auto_page_break(auto=True, margin=15)
+    pdf.set_left_margin(15)
+    pdf.set_right_margin(15)
+    
+    # Add title
+    pdf.set_font("Arial", "B", 24)
+    pdf.cell(0, 15, "Content Script", ln=True, align="C")
+    pdf.ln(5)
+    
+    # Add topic title
+    pdf.set_font("Arial", "B", 14)
+    # Clean the topic title to avoid encoding issues
+    clean_topic = topic_title.encode('latin-1', 'replace').decode('latin-1')
+    pdf.multi_cell(0, 10, clean_topic)
+    pdf.ln(5)
+    
+    # Add date
+    pdf.set_font("Arial", "I", 10)
+    pdf.cell(0, 10, f"Generated on: {datetime.now().strftime('%B %d, %Y')}", ln=True)
+    pdf.ln(10)
+    
+    # Add content
+    pdf.set_font("Arial", "", 11)
+    
+    # Process content line by line to handle special formatting
+    lines = script_content.split('\n')
+    for line in lines:
+        # Clean line to handle encoding issues
+        try:
+            clean_line = line.encode('latin-1', 'replace').decode('latin-1')
+        except:
+            clean_line = line.encode('ascii', 'ignore').decode('ascii')
+        
+        # Skip empty lines
+        if not clean_line.strip():
+            pdf.ln(4)
+            continue
+            
+        # Handle headers (lines starting with #)
+        if clean_line.strip().startswith('#'):
+            # Remove # symbols and make bold
+            header_text = clean_line.strip().lstrip('#').strip()
+            if header_text:  # Only render if there's actual text
+                pdf.set_font("Arial", "B", 13)
+                try:
+                    pdf.multi_cell(0, 7, header_text)
+                except:
+                    # Fallback if rendering fails
+                    pdf.cell(0, 7, header_text[:100], ln=True)
+                pdf.ln(3)
+                pdf.set_font("Arial", "", 11)
+        # Handle bold text (**text**)
+        elif '**' in clean_line:
+            # Remove ** markers
+            plain_text = clean_line.replace('**', '')
+            if plain_text.strip():
+                try:
+                    pdf.multi_cell(0, 6, plain_text)
+                except:
+                    pdf.cell(0, 6, plain_text[:150], ln=True)
+        # Regular text
+        else:
+            if clean_line.strip():
+                try:
+                    pdf.multi_cell(0, 6, clean_line)
+                except:
+                    # Fallback: truncate very long lines
+                    pdf.cell(0, 6, clean_line[:150], ln=True)
+    
+    # Return PDF as bytes (output already returns bytearray/bytes)
+    return bytes(pdf.output())
     
     # filepath: /Users/siddharthshukla/Library/CloudStorage/OneDrive-ManipalUniversityJaipur/Kaam Dhandha/Internship/Varnan Labs/MAS/crewai-groq-project/utils/helpers.py
 import time

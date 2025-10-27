@@ -22,7 +22,7 @@ import logging
 import json
 import os
 from crews.crew_definitions import get_content_creation_crew
-from utils.helpers import save_session_data, load_session_data, parse_topic_results
+from utils.helpers import save_session_data, load_session_data, parse_topic_results, create_script_pdf
 
 # Handle API key from either .env (local) or Streamlit secrets (cloud)
 if not os.getenv("GROQ_API_KEY"):
@@ -103,7 +103,7 @@ def display_sidebar():
     st.sidebar.progress(st.session_state.step / 5)
     st.sidebar.write(f"Step {st.session_state.step} of 5")
     
-    st.sidebar.header("Navigation")
+    st.sidebar.header("Workflow Steps")
     step_names = {
         1: "Topic Research",
         2: "Topic Selection",
@@ -112,11 +112,19 @@ def display_sidebar():
         5: "Final Results"
     }
     
+    # Display steps as a list with current step highlighted
     for step, name in step_names.items():
-        if st.sidebar.button(name, disabled=step > st.session_state.step):
-            if step <= st.session_state.step:
-                st.session_state.step = step
-                st.rerun()
+        if step == st.session_state.step:
+            # Current step - highlighted
+            st.sidebar.markdown(f"**🎯 {step}. {name}**")
+        elif step < st.session_state.step:
+            # Completed step
+            st.sidebar.markdown(f"✅ {step}. {name}")
+        else:
+            # Future step
+            st.sidebar.markdown(f"⏸️ {step}. {name}")
+    
+    st.sidebar.divider()
 
 # Step 1: Research topics based on content niche
 def step_topic_research():
@@ -264,25 +272,23 @@ def step_script_generation():
         # Simple direct button for script generation
         st.write(f"Generate a script for: **{st.session_state.data.get('selected_topic', 'Unknown Topic')}**")
         
-        # Simplified approach - direct button without columns
-        if st.button("Generate Script", key="direct_generate"):
-            st.session_state.script_generation_in_progress = True
-            st.rerun()
-        
-        if st.session_state.script_generation_in_progress:
+        # Show spinner immediately when button is clicked
+        if st.button("Generate Script", key="direct_generate") or st.session_state.script_generation_in_progress:
+            if not st.session_state.script_generation_in_progress:
+                st.session_state.script_generation_in_progress = True
+            
             try:
                 # Fetch required data
                 selected_topic = st.session_state.data["selected_topic"]
                 research_data = st.session_state.data["research_data"]
                 
-                # Just pass the string directly - we've updated task_definitions.py to handle this
-                crew = get_content_creation_crew(
-                    selected_topic=selected_topic,
-                    research_data=research_data  # Pass string directly
-                )
-                
-                # Show progress
+                # Show progress immediately
                 with st.spinner("Writing your script based on the research..."):
+                    # Create crew and generate script
+                    crew = get_content_creation_crew(
+                        selected_topic=selected_topic,
+                        research_data=research_data
+                    )
                     result = crew.kickoff()
                 
                 # Store result immediately
@@ -365,7 +371,7 @@ def step_script_review():
 
 # Step 5: Display final results
 def step_final_results():
-    st.header("Your Content Package")
+    st.header("🎉 Your Content Package is Ready!")
     
     # Display all generated content
     st.subheader("📝 Script")
@@ -376,43 +382,38 @@ def step_final_results():
     if "media_assets" in st.session_state.data:
         st.markdown(st.session_state.data["media_assets"])
     
-    # Download buttons
-    col1, col2, col3 = st.columns(3)
+    st.divider()
+    
+    # Action buttons in columns for better layout
+    col1, col2 = st.columns(2)
     
     with col1:
-        st.download_button(
-            label="Download Script",
-            data=script,
-            file_name="content_script.txt",
-            mime="text/plain"
-        )
+        # Generate PDF and provide download button
+        try:
+            topic_title = st.session_state.data.get('selected_topic', 'Content Script')
+            pdf_data = create_script_pdf(script, topic_title)
+            st.download_button(
+                label="📥 Download Script (PDF)",
+                data=pdf_data,
+                file_name=f"{topic_title.replace(' ', '_')}_script.pdf",
+                mime="application/pdf",
+                use_container_width=True
+            )
+        except Exception as e:
+            st.error(f"Error generating PDF: {str(e)}")
+            logger.error(f"PDF generation error: {str(e)}", exc_info=True)
     
     with col2:
-        if "media_assets" in st.session_state.data:
-            st.download_button(
-                label="Download Media Assets",
-                data=st.session_state.data["media_assets"],
-                file_name="media_assets.txt",
-                mime="text/plain"
-            )
-    
-    with col3:
-        if "research_data" in st.session_state.data:
-            st.download_button(
-                label="Download Research",
-                data=st.session_state.data["research_data"],
-                file_name="research_data.txt",
-                mime="text/plain"
-            )
-    
-    # Start over button
-    if st.button("Start a New Project"):
-        st.session_state.step = 1
-        st.session_state.data = {}
-        for flag in ["topic_research_in_progress", "content_research_in_progress", 
-                     "script_generation_in_progress", "media_generation_in_progress"]:
-            st.session_state[flag] = False
-        st.rerun()
+        # Start over button
+        if st.button("🔄 Start a New Project", use_container_width=True):
+            # Clear all session state
+            st.session_state.session_id = str(uuid.uuid4())
+            st.session_state.step = 1
+            st.session_state.data = {}
+            for flag in ["topic_research_in_progress", "content_research_in_progress", 
+                         "script_generation_in_progress", "media_generation_in_progress"]:
+                st.session_state[flag] = False
+            st.rerun()
 
 # Main function
 def main():
