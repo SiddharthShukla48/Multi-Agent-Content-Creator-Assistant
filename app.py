@@ -174,8 +174,8 @@ def step_topic_selection():
     if "topics" in st.session_state.data:
         topics = st.session_state.data["topics"]
         
-        # If parsing failed, just show the raw output
-        if not topics or (len(topics) == 1 and topics[0].get("title", "").startswith("Raw output")):
+        # If parsing failed or returned None, show the raw output
+        if not topics:
             with st.expander("📋 Research Results", expanded=True):
                 st.markdown(st.session_state.data["topic_research_result"])
             selected_topic = st.text_input("Enter your chosen topic based on the research above:")

@@ -37,17 +37,41 @@ def load_session_data(session_id):
 def parse_topic_results(output):
     """Parse the topic research results into a structured format"""
     try:
-        # This is a simple example - in reality you'd want more robust parsing
+        output_str = str(output)
+        
+        # Try to parse as JSON first
+        import re
+        # Look for JSON array in the output
+        json_match = re.search(r'\[[\s\S]*\]', output_str)
+        if json_match:
+            try:
+                topics_data = json.loads(json_match.group(0))
+                if isinstance(topics_data, list) and len(topics_data) > 0:
+                    # Convert JSON format to our format
+                    topics = []
+                    for topic in topics_data:
+                        parsed_topic = {
+                            'title': topic.get('title', 'Untitled'),
+                            'rationale': topic.get('engagement_reason', topic.get('rationale', 'Not provided')),
+                            'audience': topic.get('audience_size', topic.get('audience', 'Not provided')),
+                            'talking_points': ', '.join(topic.get('talking_points', [])) if isinstance(topic.get('talking_points'), list) else topic.get('talking_points', 'Not provided')
+                        }
+                        topics.append(parsed_topic)
+                    return topics
+            except json.JSONDecodeError:
+                pass
+        
+        # Fallback to line-by-line parsing
         topics = []
         current_topic = {}
         
-        for line in output.split('\n'):
+        for line in output_str.split('\n'):
             line = line.strip()
-            if line.startswith("Topic"):
+            if line.startswith("Topic") or line.startswith("title"):
                 if current_topic and 'title' in current_topic:
                     topics.append(current_topic)
                 current_topic = {'title': line.split(':', 1)[1].strip() if ':' in line else line}
-            elif "why" in line.lower() and current_topic:
+            elif "why" in line.lower() or "engagement" in line.lower() and current_topic:
                 current_topic['rationale'] = line.split(':', 1)[1].strip() if ':' in line else line
             elif "audience" in line.lower() and current_topic:
                 current_topic['audience'] = line.split(':', 1)[1].strip() if ':' in line else line
@@ -56,11 +80,17 @@ def parse_topic_results(output):
         
         if current_topic and 'title' in current_topic:
             topics.append(current_topic)
+        
+        # If we got topics, return them
+        if topics:
+            return topics
             
-        return topics
-    except Exception:
-        # If parsing fails, return the raw output
-        return [{"title": "Raw output", "rationale": output}]
+        # Otherwise return None to trigger fallback display
+        return None
+        
+    except Exception as e:
+        # If parsing fails completely, return None to show raw output
+        return None
     
     # filepath: /Users/siddharthshukla/Library/CloudStorage/OneDrive-ManipalUniversityJaipur/Kaam Dhandha/Internship/Varnan Labs/MAS/crewai-groq-project/utils/helpers.py
 import time
