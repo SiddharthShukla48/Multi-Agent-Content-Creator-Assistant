@@ -166,15 +166,16 @@ def step_topic_selection():
         
         # If parsing failed, just show the raw output
         if not topics or (len(topics) == 1 and topics[0].get("title", "").startswith("Raw output")):
-            st.text_area("Research Results", st.session_state.data["topic_research_result"], height=300)
+            with st.expander("📋 Research Results", expanded=True):
+                st.markdown(st.session_state.data["topic_research_result"])
             selected_topic = st.text_input("Enter your chosen topic based on the research above:")
         else:
             # Display parsed topics
             for i, topic in enumerate(topics):
                 with st.expander(f"Topic {i+1}: {topic.get('title', 'Unnamed Topic')}"):
-                    st.write(f"**Rationale:** {topic.get('rationale', 'Not provided')}")
-                    st.write(f"**Audience:** {topic.get('audience', 'Not provided')}")
-                    st.write(f"**Talking Points:** {topic.get('talking_points', 'Not provided')}")
+                    st.markdown(f"**Rationale:** {topic.get('rationale', 'Not provided')}")
+                    st.markdown(f"**Audience:** {topic.get('audience', 'Not provided')}")
+                    st.markdown(f"**Talking Points:** {topic.get('talking_points', 'Not provided')}")
             
             # Let the user select a topic or enter a custom one
             topic_options = [topic.get("title", f"Topic {i+1}") for i, topic in enumerate(topics)]
@@ -242,7 +243,7 @@ def step_script_generation():
     if "script" in st.session_state.data:
         st.success("Script has been generated!")
         with st.expander("Generated Script", expanded=True):
-            st.write(st.session_state.data["script"])
+            st.markdown(st.session_state.data["script"])
             
         # Simple direct navigation button
         if st.button("Continue to Script Review"):
