@@ -22,7 +22,8 @@ import logging
 import json
 import os
 from crews.crew_definitions import get_content_creation_crew
-from utils.helpers import save_session_data, load_session_data, parse_topic_results, create_script_pdf
+from utils.helpers import save_session_data, load_session_data, parse_topic_results, create_script_pdf, get_user_sessions
+from utils.auth import check_authentication, login_page, logout
 
 # Handle API key from either .env (local) or Streamlit secrets (cloud)
 if not os.getenv("GROQ_API_KEY"):
@@ -99,6 +100,13 @@ def load_previous_session():
 
 # Display the sidebar navigation
 def display_sidebar():
+    # User info and logout at the top
+    if st.session_state.get('username'):
+        st.sidebar.markdown(f"### 👤 Welcome, **{st.session_state.username}**!")
+        if st.sidebar.button("🚪 Logout", use_container_width=True):
+            logout()
+        st.sidebar.divider()
+    
     st.sidebar.header("Progress")
     st.sidebar.progress(st.session_state.step / 5)
     st.sidebar.write(f"Step {st.session_state.step} of 5")
@@ -125,6 +133,31 @@ def display_sidebar():
             st.sidebar.markdown(f"⏸️ {step}. {name}")
     
     st.sidebar.divider()
+    
+    # Show user's previous sessions
+    if st.session_state.get('username'):
+        st.sidebar.subheader("📁 Your Recent Projects")
+        try:
+            sessions = get_user_sessions(st.session_state.username)
+            
+            if sessions:
+                # Show up to 5 most recent sessions
+                for session in sessions[:5]:
+                    with st.sidebar.expander(f"🎬 {session['content_niche']}", expanded=False):
+                        st.write(f"**Step:** {session['step']}/5")
+                        if session.get('selected_topic') != 'N/A':
+                            st.write(f"**Topic:** {session['selected_topic']}")
+                        
+                        # Load this session button
+                        if st.button(f"Load Project", key=f"load_{session['session_id']}"):
+                            st.session_state.session_id = session['session_id']
+                            load_previous_session()
+                            st.rerun()
+            else:
+                st.sidebar.info("No previous projects yet")
+        except Exception as e:
+            logger.error(f"Error loading user sessions: {e}")
+            st.sidebar.info("No previous projects")
 
 # Step 1: Research topics based on content niche
 def step_topic_research():
@@ -424,7 +457,12 @@ def main():
         layout="wide"
     )
     
-    # Initialize and load session
+    # Check authentication first
+    if not check_authentication():
+        login_page()
+        return
+    
+    # Initialize and load session for authenticated users
     initialize_session_state()
     load_previous_session()
     

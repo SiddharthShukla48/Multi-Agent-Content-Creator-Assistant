@@ -20,18 +20,56 @@ class CustomEncoder(json.JSONEncoder):
 
 # Save data between session steps
 def save_session_data(session_id, data_dict):
+    """Save data between session steps (user-specific if authenticated)"""
     data_dir = ensure_data_directory()
-    with open(data_dir / f"{session_id}.json", "w") as f:
+    
+    # Include username in filename for user-specific sessions
+    if hasattr(st.session_state, 'username') and st.session_state.username:
+        filename = f"{st.session_state.username}_{session_id}.json"
+    else:
+        filename = f"{session_id}.json"
+    
+    with open(data_dir / filename, "w") as f:
         json.dump(data_dict, f, cls=CustomEncoder)  # Use the custom encoder
 
 # Load data from previous session steps
 def load_session_data(session_id):
+    """Load data from previous session steps (user-specific if authenticated)"""
     data_dir = ensure_data_directory()
+    
+    # Include username in filename for user-specific sessions
+    if hasattr(st.session_state, 'username') and st.session_state.username:
+        filename = f"{st.session_state.username}_{session_id}.json"
+    else:
+        filename = f"{session_id}.json"
+    
     try:
-        with open(data_dir / f"{session_id}.json", "r") as f:
+        with open(data_dir / filename, "r") as f:
             return json.load(f)
     except FileNotFoundError:
         return {}
+
+# Get all sessions for a specific user
+def get_user_sessions(username: str) -> list:
+    """Get all sessions for a specific user"""
+    data_dir = ensure_data_directory()
+    sessions = []
+    
+    for file in data_dir.glob(f"{username}_*.json"):
+        try:
+            with open(file, 'r') as f:
+                data = json.load(f)
+                sessions.append({
+                    'session_id': file.stem.replace(f"{username}_", ""),
+                    'content_niche': data.get('content_niche', 'Unknown'),
+                    'step': data.get('step', 1),
+                    'modified': file.stat().st_mtime,
+                    'selected_topic': data.get('selected_topic', 'N/A')
+                })
+        except:
+            continue
+    
+    return sorted(sessions, key=lambda x: x['modified'], reverse=True)
 
 # Parse agent output for display
 def parse_topic_results(output):

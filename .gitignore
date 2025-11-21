@@ -25,6 +25,10 @@ __pycache__/
 # Session data
 session_data/*.json
 
+# Authentication data
+users.json
+users.db
+
 # Logs
 *.log
 app_debug.log
