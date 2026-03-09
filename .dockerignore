@@ -1,0 +1,54 @@
+# Virtual environments
+venv/
+.venv/
+env/
+ENV/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*.pyc
+*.pyo
+
+# Environment variables (use docker-compose environment instead)
+.env
+.env.local
+.streamlit/secrets.toml
+
+# Session data (mounted as a volume)
+session_data/
+
+# Authentication data
+users.json
+users.db
+
+# Logs
+*.log
+app_debug.log
+step_transition.txt
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Distribution / packaging
+dist/
+build/
+*.egg-info/
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+
